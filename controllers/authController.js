@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const { registerSchema, loginSchema } = require('../validators/authValidator');
-const sendEmail = require('../services/emailService');
+const { sendEmail } = require('../services/emailService');
 const { assignPhoneNumberToUser } = require('../services/twilioService');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
