@@ -1,4 +1,5 @@
 const Customer = require('../models/Customer');
+const { emitCustomerCreated, emitCustomerUpdated, emitCustomerDeleted } = require('../services/websocketService');
 
 // @desc    Search customers by name or phone number
 // @route   GET /api/customers
@@ -130,6 +131,9 @@ const createCustomer = async (req, res) => {
 
         await customer.save();
 
+        // Emit real-time update
+        emitCustomerCreated(req.user.id, customer);
+
         res.status(201).json({
             success: true,
             message: 'Customer created successfully',
@@ -199,6 +203,9 @@ const updateCustomer = async (req, res) => {
 
         await customer.save();
 
+        // Emit real-time update
+        emitCustomerUpdated(req.user.id, customer);
+
         res.status(200).json({
             success: true,
             message: 'Customer updated successfully',
@@ -252,6 +259,9 @@ const deleteCustomer = async (req, res) => {
 
         // Perform soft delete
         await customer.softDelete();
+
+        // Emit real-time update
+        emitCustomerDeleted(req.user.id, customer._id);
 
         res.status(200).json({
             success: true,

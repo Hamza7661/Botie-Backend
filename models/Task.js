@@ -16,6 +16,11 @@ const taskSchema = new mongoose.Schema({
         required: [true, 'Please provide task description'],
         trim: true,
     },
+    conversation: {
+        type: String,
+        default: null,
+        trim: true,
+    },
     customer: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Customer',

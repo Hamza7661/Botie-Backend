@@ -1,6 +1,8 @@
 const Task = require('../models/Task');
 const Customer = require('../models/Customer');
 const { taskSchema, taskUpdateSchema, paginationSchema } = require('../validators/taskValidator');
+const { emitTaskCreated, emitTaskUpdated, emitTaskDeleted } = require('../services/websocketService');
+const { sendThirdPartyTaskNotification } = require('../services/emailService');
 
 // @desc    Get all tasks with pagination
 // @route   GET /api/tasks
@@ -117,7 +119,7 @@ const createTask = async (req, res) => {
             });
         }
 
-        const { heading, summary, description, isResolved, customer: customerData } = value;
+        const { heading, summary, description, isResolved, customer: customerData, conversation } = value;
 
         // Check if customer exists (by phone number)
         let customer = await Customer.findOne({ 
@@ -138,6 +140,7 @@ const createTask = async (req, res) => {
             heading,
             summary,
             description,
+            conversation: conversation || null,
             isResolved: isResolved || false,
             customer: customer._id,
             user: req.user.id
@@ -147,6 +150,14 @@ const createTask = async (req, res) => {
 
         // Populate customer details for response
         await task.populate('customer', 'name address phoneNumber');
+
+        // Emit real-time update
+        emitTaskCreated(req.user.id, task);
+
+        // Send email notification if this is a third-party request
+        if (req.authType === 'api_key' || req.apiClient?.isThirdParty) {
+            await sendThirdPartyTaskNotification(req.user, task, customer);
+        }
 
         res.status(201).json({
             success: true,
@@ -187,6 +198,8 @@ const updateTask = async (req, res) => {
             });
         }
 
+        const { heading, summary, description, isResolved, customer: customerData, conversation } = value;
+
         const task = await Task.findOne({ 
             _id: req.params.id, 
             user: req.user.id 
@@ -212,6 +225,7 @@ const updateTask = async (req, res) => {
         if (value.heading !== undefined) updateFields.heading = value.heading;
         if (value.summary !== undefined) updateFields.summary = value.summary;
         if (value.description !== undefined) updateFields.description = value.description;
+        if (value.conversation !== undefined) updateFields.conversation = value.conversation;
         if (value.isResolved !== undefined) updateFields.isResolved = value.isResolved;
 
         // Handle customer update if provided
@@ -244,6 +258,9 @@ const updateTask = async (req, res) => {
 
         // Populate customer details for response
         await updatedTask.populate('customer', 'name address phoneNumber');
+
+        // Emit real-time update
+        emitTaskUpdated(req.user.id, updatedTask);
 
         res.status(200).json({
             success: true,
@@ -297,6 +314,9 @@ const deleteTask = async (req, res) => {
 
         // Perform soft delete
         await task.softDelete();
+
+        // Emit real-time update
+        emitTaskDeleted(req.user.id, task);
 
         res.status(200).json({ 
             success: true, 
@@ -420,6 +440,9 @@ const restoreTask = async (req, res) => {
 
         // Populate customer details for response
         await task.populate('customer', 'name address phoneNumber');
+
+        // Emit real-time update
+        emitTaskUpdated(req.user.id, task);
 
         res.status(200).json({
             success: true,

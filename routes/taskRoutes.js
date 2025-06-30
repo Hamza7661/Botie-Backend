@@ -10,24 +10,22 @@ const {
     restoreTask
 } = require('../controllers/taskController');
 const { protect } = require('../middleware/authMiddleware');
+const { dualAuth } = require('../middleware/dualAuthMiddleware');
 
-// All routes in this file are protected
-router.use(protect);
-
-// Task routes
+// Task routes with dual authentication (JWT or API Key)
 router.route('/')
-    .get(getAllTasks)
-    .post(createTask);
+    .get(protect, getAllTasks)
+    .post(dualAuth, createTask); // Allow both JWT and API key
 
 router.route('/deleted')
-    .get(getDeletedTasks);
+    .get(protect, getDeletedTasks);
 
 router.route('/:id')
-    .get(getTaskById)
-    .put(updateTask)
-    .delete(deleteTask);
+    .get(protect, getTaskById)
+    .put(protect, updateTask)
+    .delete(protect, deleteTask);
 
 router.route('/:id/restore')
-    .put(restoreTask);
+    .put(protect, restoreTask);
 
 module.exports = router; 

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Job Booked via AI Agent</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #007bff;
+            margin: 0;
+            font-size: 28px;
+        }
+        .badge {
+            display: inline-block;
+            background-color: #28a745;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .section h3 {
+            color: #007bff;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #555;
+            min-width: 120px;
+        }
+        .detail-value {
+            color: #333;
+            flex: 1;
+            text-align: right;
+        }
+        .customer-info {
+            background-color: #e3f2fd;
+            border-left-color: #2196f3;
+        }
+        .task-info {
+            background-color: #f3e5f5;
+            border-left-color: #9c27b0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #666;
+            font-size: 14px;
+        }
+        .action-button {
+            display: inline-block;
+            background-color: #007bff;
+            color: white;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .action-button:hover {
+            background-color: #0056b3;
+        }
+        .ai-notice {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .ai-notice strong {
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 New Job Booked</h1>
+            <div class="badge">AI Agent</div>
+        </div>
+
+        <div class="ai-notice">
+            <strong>🤖 AI Agent Notification:</strong> This job was automatically booked through our AI agent system. 
+            A customer has been assisted and their request has been converted into a task for you.
+        </div>
+
+        <div class="section task-info">
+            <h3>📋 Job Details</h3>
+            <div class="detail-row">
+                <span class="detail-label">Job Title:</span>
+                <span class="detail-value">{{taskHeading}}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Summary:</span>
+                <span class="detail-value">{{taskSummary}}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Description:</span>
+                <span class="detail-value">{{taskDescription}}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Status:</span>
+                <span class="detail-value">{{taskStatus}}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Created:</span>
+                <span class="detail-value">{{taskCreatedAt}}</span>
+            </div>
+        </div>
+
+        <div class="section customer-info">
+            <h3>👤 Customer Information</h3>
+            <div class="detail-row">
+                <span class="detail-label">Name:</span>
+                <span class="detail-value">{{customerName}}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Address:</span>
+                <span class="detail-value">{{customerAddress}}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Phone:</span>
+                <span class="detail-value">{{customerPhone}}</span>
+            </div>
+        </div>
+
+        <div class="section conversation-info" style="background-color: #f8f9fa; border-left-color: #17a2b8;">
+            <h3>💬 Conversation History</h3>
+            <div style="background-color: #ffffff; padding: 15px; border-radius: 5px; border: 1px solid #dee2e6; max-height: 300px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.4;">
+                {{conversation}}
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>📞 Next Steps</h3>
+            <p>Please review the job details above and contact the customer to:</p>
+            <ul>
+                <li>Confirm the appointment time</li>
+                <li>Discuss any additional requirements</li>
+                <li>Provide a quote if needed</li>
+                <li>Schedule the work</li>
+            </ul>
+            
+            <p><strong>Task ID:</strong> {{taskId}}</p>
+        </div>
+
+        <div class="footer">
+            <p>This is an automated notification from your Botie system.</p>
+            <p>If you have any questions, please contact support.</p>
+            <p><small>Generated on {{currentDate}}</small></p>
+        </div>
+    </div>
+</body>
+</html> 

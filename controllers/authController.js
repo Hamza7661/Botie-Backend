@@ -259,6 +259,7 @@ exports.login = async (req, res, next) => {
                     twilioPhoneStatus: user.twilioPhoneStatus,
                     profession: user.profession,
                     professionDescription: user.professionDescription,
+                    isEmailVerified: user.isEmailVerified,
                     createdAt: user.createdAt
                 }
             }
@@ -403,5 +404,90 @@ exports.resetPassword = async (req, res, next) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
+// @desc    Resend email verification
+// @route   POST /api/auth/resend-verification
+// @access  Public
+exports.resendVerification = async (req, res, next) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Please provide an email address' 
+            });
+        }
+
+        // Find user by email (including soft-deleted users)
+        const user = await User.findUserWithDeleted({ email });
+
+        if (!user) {
+            // Send success response to prevent email enumeration
+            return res.status(200).json({ 
+                success: true, 
+                message: 'If a user with that email exists, a verification link has been sent.' 
+            });
+        }
+
+        // Check if user is soft deleted
+        if (user.isSoftDeleted()) {
+            return res.status(200).json({ 
+                success: true, 
+                message: 'If a user with that email exists, a verification link has been sent. Note: If your account was deactivated, you may need to re-register.' 
+            });
+        }
+
+        // Check if email is already verified
+        if (user.isEmailVerified) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Email is already verified' 
+            });
+        }
+
+        // Generate new verification token
+        const verificationToken = user.getEmailVerificationToken();
+        await user.save();
+
+        const verifyUrl = `${req.protocol}://${req.get('host')}/api/auth/verifyemail?token=${verificationToken}`;
+        const message = `Please verify your email by copying and pasting this link into your browser: \n\n ${verifyUrl} \n\n This link will expire in 10 minutes.`;
+
+        try {
+            const templatePath = path.join(__dirname, '..', 'templates', 'emailVerificationTemplate.html');
+            let htmlTemplate = fs.readFileSync(templatePath, 'utf-8');
+            htmlTemplate = htmlTemplate.replace(/{{verifyUrl}}/g, verifyUrl);
+
+            await sendEmail({
+                email: user.email,
+                subject: 'Email Verification - Resend',
+                message,
+                html: htmlTemplate,
+            });
+
+            res.status(200).json({ 
+                success: true, 
+                message: 'Verification email sent successfully. Please check your inbox.' 
+            });
+        } catch (err) {
+            console.error('Email sending failed:', err);
+            // Clear the verification token if email fails
+            user.emailVerificationToken = undefined;
+            user.emailVerificationTokenExpires = undefined;
+            await user.save({ validateBeforeSave: false });
+            
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Email could not be sent. Please try again later.' 
+            });
+        }
+    } catch (err) {
+        console.error('Error in resendVerification:', err);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Server error' 
+        });
     }
 }; 

@@ -34,6 +34,9 @@ const taskSchema = Joi.object({
         'string.empty': 'Task description is required',
         'string.max': 'Task description cannot exceed 2000 characters'
     }),
+    conversation: Joi.string().optional().allow(null, '').trim().max(10000).messages({
+        'string.max': 'Conversation cannot exceed 10000 characters'
+    }),
     isResolved: Joi.boolean().default(false).messages({
         'boolean.base': 'isResolved must be a boolean value'
     }),
@@ -52,6 +55,9 @@ const taskUpdateSchema = Joi.object({
     }),
     description: Joi.string().trim().max(2000).optional().messages({
         'string.max': 'Task description cannot exceed 2000 characters'
+    }),
+    conversation: Joi.string().optional().allow(null, '').trim().max(10000).messages({
+        'string.max': 'Conversation cannot exceed 10000 characters'
     }),
     isResolved: Joi.boolean().optional().messages({
         'boolean.base': 'isResolved must be a boolean value'
