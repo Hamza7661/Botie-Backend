@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const { 
     register, 
     verifyEmail, 
@@ -10,6 +11,11 @@ const {
 } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
 const router = express.Router();
+
+// Serve Google verification file
+router.get('/verifyemail/google6b553eca38d3da73.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'public', 'google6b553eca38d3da73.html'));
+});
 
 router.post('/register', register);
 router.get('/verifyemail', verifyEmail);

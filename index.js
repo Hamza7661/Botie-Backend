@@ -46,6 +46,9 @@ app.use(cors({
 
 app.use(express.json());
 
+// Serve static files from public directory
+app.use(express.static('public'));
+
 // Mount routers
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
