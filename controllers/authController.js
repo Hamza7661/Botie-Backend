@@ -160,7 +160,8 @@ exports.verifyEmail = async (req, res, next) => {
 
         if (!user) {
             const templatePath = path.join(__dirname, '..', 'templates', 'emailVerifiedErrorTemplate.html');
-            return res.status(400).sendFile(templatePath);
+            const errorTemplate = fs.readFileSync(templatePath, 'utf-8');
+            return res.status(400).send(errorTemplate);
         }
 
         user.isEmailVerified = true;
@@ -197,11 +198,15 @@ exports.verifyEmail = async (req, res, next) => {
         await user.save({ validateBeforeSave: false });
 
         const templatePath = path.join(__dirname, '..', 'templates', 'emailVerifiedSuccessTemplate.html');
-        return res.sendFile(templatePath);
+        const successTemplate = fs.readFileSync(templatePath, 'utf-8');
+        return res.send(successTemplate);
 
     } catch (err) {
         console.error(err);
-        res.status(500).json({ success: false, message: 'Server error' });
+        const errorHtml = `
+        <!DOCTYPE html>
+        <html lang=\"en\">\n        <head>\n            <meta charset=\"UTF-8\">\n            <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n            <title>Server Error</title>\n            <style>\n                body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 100vh; }\n                .container { background-color: #ffffff; padding: 40px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); text-align: center; max-width: 600px; }\n                .icon { color: #dc3545; font-size: 50px; margin-bottom: 20px; }\n                h1 { margin: 0 0 15px; color: #333333; }\n                p { color: #555555; line-height: 1.6; }\n            </style>\n        </head>\n        <body>\n            <div class=\"container\">\n                <div class=\"icon\">&#9888;</div>\n                <h1>Server Error</h1>\n                <p>We encountered an error while processing your email verification. Please try again later or contact support if the problem persists.</p>\n            </div>\n        </body>\n        </html>`;
+        res.status(500).send(errorHtml);
     }
 };
 
