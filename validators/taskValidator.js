@@ -12,9 +12,9 @@ const customerSchema = Joi.object({
         'string.min': 'Customer address must be at least 5 characters long',
         'string.max': 'Customer address cannot exceed 500 characters'
     }),
-    phoneNumber: Joi.string().required().trim().pattern(/^[\+]?[1-9][\d]{0,15}$/).messages({
+    phoneNumber: Joi.string().required().trim().pattern(/^[\+]?[\d]{7,15}$/).messages({
         'string.empty': 'Customer phone number is required',
-        'string.pattern.base': 'Please provide a valid phone number'
+        'string.pattern.base': 'Please provide a valid phone number (7-15 digits, optionally starting with +)'
     })
 });
 
