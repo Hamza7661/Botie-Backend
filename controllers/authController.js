@@ -236,13 +236,15 @@ exports.login = async (req, res, next) => {
             });
         }
 
-        if (!user.isEmailVerified) {
-            return res.status(401).json({ success: false, message: 'Please verify your email to login' });
-        }
-
+        // Check password first before email verification
         const isMatch = await user.matchPassword(password);
         if (!isMatch) {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+
+        // Only check email verification if password is correct
+        if (!user.isEmailVerified) {
+            return res.status(401).json({ success: false, message: 'Please verify your email to login' });
         }
 
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
