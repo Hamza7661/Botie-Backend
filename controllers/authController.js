@@ -49,7 +49,7 @@ exports.register = async (req, res, next) => {
 
                     await sendEmail({
                         email: existingUser.email,
-                        subject: 'Email Verification - Account Reactivation',
+                        subject: 'Botie Account Verification - Reactivation',
                         message,
                         html: htmlTemplate,
                     });
@@ -82,7 +82,7 @@ exports.register = async (req, res, next) => {
 
                     await sendEmail({
                         email: existingUser.email,
-                        subject: 'Complete Your Registration',
+                        subject: 'Complete Your Botie Registration',
                         message,
                         html: htmlTemplate,
                     });
@@ -120,7 +120,7 @@ exports.register = async (req, res, next) => {
 
                 await sendEmail({
                     email: user.email,
-                    subject: 'Email Verification',
+                    subject: 'Botie Account Verification',
                     message,
                     html: htmlTemplate,
                 });
@@ -469,7 +469,7 @@ exports.resendVerification = async (req, res, next) => {
 
             await sendEmail({
                 email: user.email,
-                subject: 'Email Verification - Resend',
+                subject: 'Botie Account Verification - Resend',
                 message,
                 html: htmlTemplate,
             });
