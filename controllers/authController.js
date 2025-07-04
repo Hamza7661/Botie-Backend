@@ -7,6 +7,24 @@ const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path');
 
+// Helper function to get the correct protocol for URL generation
+const getProtocol = (req) => {
+    // In production, force HTTPS
+    if (process.env.NODE_ENV === 'production') {
+        return 'https';
+    }
+    // Check for X-Forwarded-Proto header (common when behind proxy/load balancer)
+    if (req.headers['x-forwarded-proto'] === 'https') {
+        return 'https';
+    }
+    // Check for X-Forwarded-Ssl header
+    if (req.headers['x-forwarded-ssl'] === 'on') {
+        return 'https';
+    }
+    // Fallback to request protocol
+    return req.protocol;
+};
+
 // @desc    Register a new user
 // @route   POST /api/auth/register
 // @access  Public
@@ -39,7 +57,7 @@ exports.register = async (req, res, next) => {
                 const verificationToken = existingUser.getEmailVerificationToken();
                 await existingUser.save();
 
-                const verifyUrl = `${req.protocol}://${req.get('host')}/api/auth/verifyemail?token=${verificationToken}`;
+                const verifyUrl = `${getProtocol(req)}://${req.get('host')}/api/auth/verifyemail?token=${verificationToken}`;
                 const message = `Thank you for re-registering! Please verify your email by copying and pasting this link into your browser: \n\n ${verifyUrl} \n\n This link will expire in 10 minutes.`;
 
                 try {
@@ -72,7 +90,7 @@ exports.register = async (req, res, next) => {
                 const verificationToken = existingUser.getEmailVerificationToken();
                 await existingUser.save();
 
-                const verifyUrl = `${req.protocol}://${req.get('host')}/api/auth/verifyemail?token=${verificationToken}`;
+                const verifyUrl = `${getProtocol(req)}://${req.get('host')}/api/auth/verifyemail?token=${verificationToken}`;
                 const message = `You have already started the registration process. Please verify your email by copying this link into your browser: \n\n ${verifyUrl} \n\n This link expires in 10 minutes.`;
 
                 try {
@@ -110,7 +128,7 @@ exports.register = async (req, res, next) => {
             const verificationToken = user.getEmailVerificationToken();
             await user.save();
 
-            const verifyUrl = `${req.protocol}://${req.get('host')}/api/auth/verifyemail?token=${verificationToken}`;
+            const verifyUrl = `${getProtocol(req)}://${req.get('host')}/api/auth/verifyemail?token=${verificationToken}`;
             const message = `Thank you for registering! Please verify your email by copying and pasting this link into your browser: \n\n ${verifyUrl} \n\n This link will expire in 10 minutes.`;
 
             try {
@@ -346,7 +364,7 @@ exports.forgotPassword = async (req, res, next) => {
         const resetToken = user.getPasswordResetToken();
         await user.save({ validateBeforeSave: false });
 
-        const resetUrl = `${req.protocol}://${req.get('host')}/resetpassword?token=${resetToken}`;
+        const resetUrl = `${getProtocol(req)}://${req.get('host')}/resetpassword?token=${resetToken}`;
 
         try {
             const templatePath = path.join(__dirname, '..', 'templates', 'passwordResetTemplate.html');
@@ -459,7 +477,7 @@ exports.resendVerification = async (req, res, next) => {
         const verificationToken = user.getEmailVerificationToken();
         await user.save();
 
-        const verifyUrl = `${req.protocol}://${req.get('host')}/api/auth/verifyemail?token=${verificationToken}`;
+        const verifyUrl = `${getProtocol(req)}://${req.get('host')}/api/auth/verifyemail?token=${verificationToken}`;
         const message = `Please verify your email by copying and pasting this link into your browser: \n\n ${verifyUrl} \n\n This link will expire in 10 minutes.`;
 
         try {
