@@ -98,6 +98,54 @@ const emitCustomerDeleted = (userId, customerId) => {
     }
 };
 
+// Emit reminder created event to specific user
+const emitReminderCreated = (userId, reminderData) => {
+    try {
+        if (global.io) {
+            global.io.to(`user-${userId}`).emit('reminder-created', {
+                type: 'reminder-created',
+                data: reminderData,
+                timestamp: new Date().toISOString()
+            });
+            console.log(`Reminder created notification sent to user ${userId}`);
+        }
+    } catch (error) {
+        console.error('Error emitting reminder created event:', error);
+    }
+};
+
+// Emit reminder updated event to specific user
+const emitReminderUpdated = (userId, reminderData) => {
+    try {
+        if (global.io) {
+            global.io.to(`user-${userId}`).emit('reminder-updated', {
+                type: 'reminder-updated',
+                data: reminderData,
+                timestamp: new Date().toISOString()
+            });
+            console.log(`Reminder updated notification sent to user ${userId}`);
+        }
+    } catch (error) {
+        console.error('Error emitting reminder updated event:', error);
+    }
+};
+
+// Emit reminder deleted event to specific user
+const emitReminderDeleted = (userId, reminderId) => {
+    try {
+        if (global.io) {
+            global.io.to(`user-${userId}`).emit('reminder-deleted', {
+                type: 'reminder-deleted',
+                data: { reminderId },
+                timestamp: new Date().toISOString()
+            });
+            console.log(`Reminder deleted notification sent to user ${userId}`);
+        }
+    } catch (error) {
+        console.error('Error emitting reminder deleted event:', error);
+    }
+};
+
 // Emit general notification to specific user
 const emitNotification = (userId, notification) => {
     try {
@@ -137,6 +185,9 @@ module.exports = {
     emitCustomerCreated,
     emitCustomerUpdated,
     emitCustomerDeleted,
+    emitReminderCreated,
+    emitReminderUpdated,
+    emitReminderDeleted,
     emitNotification,
     broadcastToAll
 }; 

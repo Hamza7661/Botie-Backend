@@ -10,11 +10,18 @@ A comprehensive Node.js backend API for task management with user authentication
   - Password reset functionality
   - Soft delete for user accounts
 
-- **Task Management**
-  - Create, read, update, delete tasks
+- **Task Management (Appointments)**
+  - Create, read, update, delete appointments
   - Task status tracking (resolved/unresolved)
   - Soft delete functionality
   - Pagination and search capabilities
+
+- **Reminder Management**
+  - Create, read, update, delete reminders
+  - Location-based reminders with coordinates
+  - Soft delete functionality
+  - Pagination and search capabilities
+  - Location-based search (find reminders near a location)
 
 - **Customer Management**
   - Customer CRUD operations
@@ -196,13 +203,20 @@ GET /api/users/:id/customers
 Authorization: Bearer <jwt-token>
 ```
 
-### Task Endpoints
+### Task Endpoints (Appointments)
 
-#### Get All Tasks (with pagination)
+#### Get All Tasks (with pagination and filtering)
 ```http
 GET /api/tasks?page=1&limit=10&search=project&sortBy=createdAt&sortOrder=desc
 Authorization: Bearer <jwt-token>
 ```
+
+**Query Parameters:**
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Items per page (default: 10, max: 100)
+- `search` (optional): Search in heading, summary, and description
+- `sortBy` (optional): Sort field (createdAt, heading, customer.name)
+- `sortOrder` (optional): Sort direction (asc, desc)
 
 #### Get Task by ID
 ```http
@@ -210,7 +224,13 @@ GET /api/tasks/:id
 Authorization: Bearer <jwt-token>
 ```
 
-#### Create Task
+#### Get Task Types
+```http
+GET /api/tasks/types
+Authorization: Bearer <jwt-token>
+```
+
+#### Create Task (Appointment)
 ```http
 POST /api/tasks
 Authorization: Bearer <jwt-token>
@@ -229,7 +249,7 @@ Content-Type: application/json
 }
 ```
 
-#### Update Task
+#### Update Task (Appointment)
 ```http
 PUT /api/tasks/:id
 Authorization: Bearer <jwt-token>
@@ -256,15 +276,103 @@ Authorization: Bearer <jwt-token>
 
 #### Get Deleted Tasks
 ```http
-GET /api/tasks/deleted?page=1&limit=10
+GET /api/tasks/deleted?page=1&limit=10&type=1&search=project
 Authorization: Bearer <jwt-token>
 ```
+
+**Query Parameters:** Same as Get All Tasks
 
 #### Restore Deleted Task
 ```http
 PUT /api/tasks/:id/restore
 Authorization: Bearer <jwt-token>
 ```
+
+### Reminder Endpoints
+
+#### Get All Reminders (with pagination and filtering)
+```http
+GET /api/reminders?page=1&limit=10&search=meeting&sortBy=createdAt&sortOrder=desc
+Authorization: Bearer <jwt-token>
+```
+
+**Query Parameters:**
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Items per page (default: 10, max: 100)
+- `search` (optional): Search in description and location name
+- `sortBy` (optional): Sort field (createdAt, description, locationName, reminderDateTime)
+- `sortOrder` (optional): Sort direction (asc, desc)
+
+#### Get Reminder by ID
+```http
+GET /api/reminders/:id
+Authorization: Bearer <jwt-token>
+```
+
+#### Create Reminder
+```http
+POST /api/reminders
+Authorization: Bearer <jwt-token>
+Content-Type: application/json
+
+{
+  "description": "Pick up groceries from the store",
+  "coordinates": {
+    "latitude": 40.7128,
+    "longitude": -74.0060
+  },
+  "locationName": "Grocery Store",
+  "reminderDateTime": "2024-01-15T14:30:00.000Z"
+}
+```
+
+**Note:** If `coordinates` are provided but `locationName` is omitted, `locationName` will automatically be set to `null`.
+
+#### Update Reminder
+```http
+PUT /api/reminders/:id
+Authorization: Bearer <jwt-token>
+Content-Type: application/json
+
+{
+  "description": "Updated reminder description",
+  "coordinates": {
+    "latitude": 40.7589,
+    "longitude": -73.9851
+  },
+  "locationName": "Updated Location",
+  "reminderDateTime": "2024-01-16T10:00:00.000Z"
+}
+```
+
+#### Delete Reminder (Soft Delete)
+```http
+DELETE /api/reminders/:id
+Authorization: Bearer <jwt-token>
+```
+
+#### Get Deleted Reminders
+```http
+GET /api/reminders/deleted?page=1&limit=10&search=meeting
+Authorization: Bearer <jwt-token>
+```
+
+#### Restore Deleted Reminder
+```http
+PUT /api/reminders/:id/restore
+Authorization: Bearer <jwt-token>
+```
+
+#### Find Reminders Near Location
+```http
+GET /api/reminders/near?latitude=40.7128&longitude=-74.0060&maxDistance=5000
+Authorization: Bearer <jwt-token>
+```
+
+**Query Parameters:**
+- `latitude` (required): Latitude coordinate (-90 to 90)
+- `longitude` (required): Longitude coordinate (-180 to 180)
+- `maxDistance` (optional): Maximum distance in meters (default: 10000, max: 50000)
 
 ### Customer Endpoints
 
