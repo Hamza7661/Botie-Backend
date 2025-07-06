@@ -326,7 +326,23 @@ Content-Type: application/json
 }
 ```
 
-**Note:** If `coordinates` are provided but `locationName` is omitted, `locationName` will automatically be set to `null`.
+**Example: Location-only reminder (no date/time):**
+```http
+POST /api/reminders
+Authorization: Bearer <jwt-token>
+Content-Type: application/json
+
+{
+  "description": "Remember to check the store when passing by",
+  "coordinates": {
+    "latitude": 40.7128,
+    "longitude": -74.0060
+  },
+  "locationName": "Grocery Store"
+}
+```
+
+**Note:** If `coordinates` are provided but `locationName` is omitted, `locationName` will automatically be set to `null`. The `reminderDateTime` field is optional and can be set to `null` for location-only reminders.
 
 #### Update Reminder
 ```http

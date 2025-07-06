@@ -34,7 +34,8 @@ const reminderSchema = new mongoose.Schema({
     },
     reminderDateTime: {
         type: Date,
-        required: [true, 'Please provide reminder date and time'],
+        required: false,
+        default: null,
         index: true
     },
     // Soft delete fields

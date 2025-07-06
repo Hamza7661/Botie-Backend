@@ -26,9 +26,8 @@ const reminderSchema = Joi.object({
     locationName: Joi.string().trim().max(200).allow('').optional().messages({
         'string.max': 'Location name cannot exceed 200 characters'
     }),
-    reminderDateTime: Joi.date().required().messages({
-        'date.base': 'Reminder date and time must be a valid date',
-        'any.required': 'Reminder date and time is required'
+    reminderDateTime: Joi.alternatives().try(Joi.date(), Joi.valid(null)).optional().messages({
+        'alternatives.match': 'Reminder date and time must be a valid date or null'
     })
 });
 
@@ -56,8 +55,8 @@ const reminderUpdateSchema = Joi.object({
     locationName: Joi.string().trim().max(200).allow('').optional().messages({
         'string.max': 'Location name cannot exceed 200 characters'
     }),
-    reminderDateTime: Joi.date().optional().messages({
-        'date.base': 'Reminder date and time must be a valid date'
+    reminderDateTime: Joi.alternatives().try(Joi.date(), Joi.valid(null)).optional().messages({
+        'alternatives.match': 'Reminder date and time must be a valid date or null'
     })
 });
 
