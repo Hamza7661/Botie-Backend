@@ -57,7 +57,13 @@ app.use('/api/reminders', require('./routes/reminderRoutes'));
 app.use('/api/customers', require('./routes/customerRoutes'));
 app.use('/api', require('./routes/apiRoutes'));
 
+// Webhook routes (no authentication required)
+app.use('/api/webhooks', require('./routes/webhookRoutes'));
+
 const PORT = process.env.PORT || 5000;
+
+// Import reminder service
+const reminderService = require('./services/reminderService');
 
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
@@ -67,6 +73,9 @@ mongoose.connect(process.env.MONGO_URI, {
     server.listen(PORT, () => {
         console.log(`Server is running on port ${PORT}`);
         console.log(`WebSocket server is ready for real-time updates`);
+        
+        // Start the reminder service
+        reminderService.start();
     });
 }).catch(err => {
     console.error('Connection to MongoDB failed', err);

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Botie Reminder</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 300;
+        }
+        .reminder-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .reminder-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .reminder-description {
+            font-size: 18px;
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        .reminder-details {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .detail-item {
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+        }
+        .detail-icon {
+            margin-right: 10px;
+            font-size: 16px;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #34495e;
+            min-width: 100px;
+        }
+        .detail-value {
+            color: #2c3e50;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .brand {
+            color: #667eea;
+            font-weight: 600;
+        }
+        @media only screen and (max-width: 600px) {
+            .container {
+                margin: 0;
+                box-shadow: none;
+            }
+            .header {
+                padding: 20px 15px;
+            }
+            .content {
+                padding: 20px 15px;
+            }
+            .reminder-box {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="reminder-icon">{{reminderIcon}}</div>
+            <h1>Botie Reminder</h1>
+        </div>
+        
+        <div class="content">
+            <h2>Hello {{userName}},</h2>
+            
+            <div class="reminder-box">
+                <div class="reminder-description">{{reminderDescription}}</div>
+            </div>
+            
+            <div class="reminder-details">
+                <div class="detail-item">
+                    <span class="detail-icon">⏰</span>
+                    <span class="detail-label">Type:</span>
+                    <span class="detail-value">{{reminderType}}</span>
+                </div>
+                
+                {{#if locationName}}
+                <div class="detail-item">
+                    <span class="detail-icon">📍</span>
+                    <span class="detail-label">Location:</span>
+                    <span class="detail-value">{{locationName}}</span>
+                </div>
+                {{/if}}
+                
+                <div class="detail-item">
+                    <span class="detail-icon">🕐</span>
+                    <span class="detail-label">Triggered:</span>
+                    <span class="detail-value">{{triggerTime}}</span>
+                </div>
+            </div>
+            
+            <p style="color: #666; font-style: italic;">
+                This reminder was automatically triggered by your Botie app. 
+                You can manage your reminders in the app anytime.
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>Best regards,</p>
+            <p><span class="brand">Botie Team</span></p>
+            <p>Your personal reminder assistant</p>
+        </div>
+    </div>
+</body>
+</html> 

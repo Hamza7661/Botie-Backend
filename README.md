@@ -390,6 +390,91 @@ Authorization: Bearer <jwt-token>
 - `longitude` (required): Longitude coordinate (-180 to 180)
 - `maxDistance` (optional): Maximum distance in meters (default: 10000, max: 50000)
 
+### Reminder Service Endpoints
+
+#### Update User Location
+```http
+POST /api/reminders/location-update
+Authorization: Bearer <jwt-token>
+Content-Type: application/json
+
+{
+  "latitude": 40.7128,
+  "longitude": -74.0060
+}
+```
+
+#### Get Active Reminders
+```http
+GET /api/reminders/active
+Authorization: Bearer <jwt-token>
+```
+
+#### Get Pending Reminders
+```http
+GET /api/reminders/pending
+Authorization: Bearer <jwt-token>
+```
+
+#### Reset Notification Status
+```http
+PUT /api/reminders/:id/reset-notification
+Authorization: Bearer <jwt-token>
+Content-Type: application/json
+
+{
+  "triggerType": "time"
+}
+```
+
+**triggerType values:** `time` or `location`
+
+#### Get Notification History
+```http
+GET /api/reminders/:id/notification-history
+Authorization: Bearer <jwt-token>
+```
+
+#### Reminder Service Management
+```http
+POST /api/reminders/service/start
+Authorization: Bearer <jwt-token>
+
+POST /api/reminders/service/stop
+Authorization: Bearer <jwt-token>
+
+GET /api/reminders/service/status
+Authorization: Bearer <jwt-token>
+
+POST /api/reminders/service/trigger-time
+Authorization: Bearer <jwt-token>
+
+POST /api/reminders/service/trigger-location
+Authorization: Bearer <jwt-token>
+```
+
+**Service Status Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "isRunning": true,
+    "timeCronJob": {
+      "isRunning": true,
+      "nextRun": "2024-01-15T14:31:00.000Z",
+      "lastRun": "2024-01-15T14:30:00.000Z"
+    },
+    "locationCronJob": {
+      "isRunning": true,
+      "nextRun": "2024-01-15T14:35:00.000Z",
+      "lastRun": "2024-01-15T14:30:00.000Z"
+    },
+    "activeRemindersCount": 2,
+    "timestamp": "2024-01-15T14:30:15.123Z"
+  }
+}
+```
+
 ### Customer Endpoints
 
 #### Search Customers
@@ -508,6 +593,86 @@ Botie-Backend/
 - **Soft Delete**: Data retention with soft delete functionality
 - **User Isolation**: Users can only access their own data
 
+## 🔔 Notification Tracking System
+
+The Botie reminder system includes a comprehensive notification tracking system to prevent duplicate notifications:
+
+### **Notification Tracking Fields**
+Each reminder includes tracking fields to monitor notification status:
+- `timeNotificationSent`: Boolean indicating if time-based notification was sent
+- `timeNotificationSentAt`: Timestamp when time notification was sent
+- `locationNotificationSent`: Boolean indicating if location-based notification was sent
+- `locationNotificationSentAt`: Timestamp when location notification was sent
+
+### **How It Works**
+1. **Time-based Reminders**: Only processed if `timeNotificationSent` is `false`
+2. **Location-based Reminders**: Only processed if `locationNotificationSent` is `false`
+3. **Hybrid Reminders**: Can be notified for both time and location triggers independently
+4. **One-time Notifications**: Each trigger type can only send notifications once per reminder
+
+### **Notification Channels**
+When a reminder is triggered, the system sends notifications through multiple channels:
+- **📧 Email**: Professional HTML email with reminder details
+- **📞 Phone Call**: Automated voice call via Twilio (if configured)
+- **🔔 Real-time**: WebSocket notification to connected clients
+- **📱 Local**: Expo push notification (frontend)
+
+### **Management Features**
+- **Reset Notifications**: Manually reset notification status for testing
+- **Notification History**: View when notifications were sent
+- **Pending Reminders**: See which reminders haven't been notified yet
+- **Service Status**: Monitor reminder service health
+
+### **Example Notification Flow**
+```
+1. User creates reminder with time: "2024-01-15 14:30:00"
+2. System checks every minute for due reminders
+3. At 14:30:00, system finds reminder with timeNotificationSent: false
+4. System sends email + call + WebSocket notification
+5. System sets timeNotificationSent: true and timeNotificationSentAt: now
+6. Reminder will never be notified again for time trigger
+```
+
+## ⏰ **Scheduling System (node-cron)**
+
+The Botie reminder system uses **node-cron** for precise and reliable scheduling:
+
+### **Cron Jobs Configuration**
+- **Time-based reminders**: `* * * * *` (every minute)
+- **Location-based reminders**: `*/5 * * * *` (every 5 minutes)
+- **Timezone**: UTC (configurable)
+
+### **Benefits of node-cron**
+- ✅ **Precise timing** (no drift over time)
+- ✅ **Timezone support** for global users
+- ✅ **Efficient resource usage** (only runs when needed)
+- ✅ **Better error handling** and recovery
+- ✅ **Industry standard** for scheduled tasks
+
+### **Cron Job Management**
+```javascript
+// Start service
+POST /api/reminders/service/start
+
+// Stop service
+POST /api/reminders/service/stop
+
+// Check status
+GET /api/reminders/service/status
+
+// Manual triggers (for testing)
+POST /api/reminders/service/trigger-time
+POST /api/reminders/service/trigger-location
+```
+
+### **Service Monitoring**
+The system provides detailed status information:
+- **Job status**: Running/stopped
+- **Next run time**: When the job will execute next
+- **Last run time**: When the job last executed
+- **Active reminders**: Count of reminders being processed
+- **Error logging**: Detailed error tracking
+
 ## 🚀 Deployment
 
 ### Production Setup
@@ -597,3 +762,46 @@ This project is licensed under the MIT License.
 ## 🆘 Support
 
 For support and questions, please contact the development team or create an issue in the repository. 
+
+### **Call Handling & Retry Logic**
+
+The Botie system includes robust call handling with automatic retries and SMS fallback:
+
+#### **Call Flow:**
+1. **Initial Call**: System attempts to call user
+2. **30-second Timeout**: Call rings for 30 seconds
+3. **Status Check**: System checks call status via Twilio webhook
+4. **Retry Logic**: 1 retry attempt with 1-minute interval
+5. **Email Backup**: Email notification is always sent as backup
+
+#### **Call Status Handling:**
+- ✅ **Completed**: Call answered and completed successfully
+- 📞 **No Answer**: User didn't pick up (triggers retry)
+- ❌ **Failed**: Call failed due to technical issues (triggers retry)
+- 📞 **Busy**: User's phone is busy (triggers retry)
+- 📧 **Email Backup**: Email notification ensures delivery
+
+#### **Retry Configuration:**
+```javascript
+// Call settings
+timeout: 30,           // Ring for 30 seconds
+maxAttempts: 2,        // Maximum 2 call attempts (1 retry)
+retryInterval: 60000,  // 1 minute between retries
+```
+
+#### **Webhook Integration:**
+```http
+POST /api/webhooks/twilio/call-status
+Content-Type: application/x-www-form-urlencoded
+
+CallSid=CA123...&CallStatus=completed&CallDuration=45
+```
+
+#### **Database Tracking:**
+```javascript
+// Reminder model fields for call tracking
+callAttempts: Number,        // Number of call attempts (0-2)
+lastCallAttempt: Date,       // Timestamp of last call attempt
+callStatus: String,          // 'not_called' | 'calling' | 'completed' | 'failed' | 'no_answer' | 'busy' | 'cancelled'
+callSid: String,            // Twilio Call SID for tracking
+``` 

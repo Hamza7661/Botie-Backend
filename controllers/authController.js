@@ -42,121 +42,85 @@ exports.register = async (req, res, next) => {
 
         if (existingUser) {
             if (existingUser.isSoftDeleted()) {
-                // Case 1: User exists but is soft deleted - reactivate the existing user
-                existingUser.firstname = firstname;
-                existingUser.lastname = lastname;
-                existingUser.phoneNumber = phoneNumber;
-                existingUser.address = address;
-                existingUser.password = password;
-                existingUser.profession = profession;
-                existingUser.professionDescription = professionDescription;
-                existingUser.isDeleted = false;
-                existingUser.deletedAt = null;
-                existingUser.isEmailVerified = false; // Reset email verification
-
-                const verificationToken = existingUser.getEmailVerificationToken();
-                await existingUser.save();
-
-                const verifyUrl = `${getProtocol(req)}://${req.get('host')}/api/auth/verifyemail?token=${verificationToken}`;
-                const message = `Thank you for re-registering! Please verify your email by copying and pasting this link into your browser: \n\n ${verifyUrl} \n\n This link will expire in 10 minutes.`;
-
-                try {
-                    const templatePath = path.join(__dirname, '..', 'templates', 'emailVerificationTemplate.html');
-                    let htmlTemplate = fs.readFileSync(templatePath, 'utf-8');
-                    htmlTemplate = htmlTemplate.replace(/{{verifyUrl}}/g, verifyUrl);
-
-                    await sendEmail({
-                        email: existingUser.email,
-                        subject: 'Botie Account Verification - Reactivation',
-                        message,
-                        html: htmlTemplate,
-                    });
-                    res.status(201).json({ 
-                        success: true, 
-                        message: 'Registration successful. Please check your email to verify your account.'
-                    });
-                } catch (err) {
-                    console.error(err);
-                    existingUser.emailVerificationToken = undefined;
-                    existingUser.emailVerificationTokenExpires = undefined;
-                    await existingUser.save({ validateBeforeSave: false });
-                    return res.status(500).json({ success: false, message: 'Email could not be sent' });
-                }
-            } else if (existingUser.isEmailVerified) {
-                // Case 2: User is fully registered and verified.
-                return res.status(400).json({ success: false, message: 'User already exists' });
+                // User is soft-deleted - hard delete and allow new registration
+                await existingUser.hardDelete();
+                console.log(`Hard deleted soft-deleted user with email: ${email}`);
+            } else if (!existingUser.isEmailVerified) {
+                // User exists but email not verified - tell them to verify first
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'An account with this email address already exists but is not verified. Please check your email and verify your account before logging in.' 
+                });
             } else {
-                // Case 3: User registered but hasn't verified. Resend email.
-                const verificationToken = existingUser.getEmailVerificationToken();
-                await existingUser.save();
-
-                const verifyUrl = `${getProtocol(req)}://${req.get('host')}/api/auth/verifyemail?token=${verificationToken}`;
-                const message = `You have already started the registration process. Please verify your email by copying this link into your browser: \n\n ${verifyUrl} \n\n This link expires in 10 minutes.`;
-
-                try {
-                    const templatePath = path.join(__dirname, '..', 'templates', 'emailVerificationTemplate.html');
-                    let htmlTemplate = fs.readFileSync(templatePath, 'utf-8');
-                    htmlTemplate = htmlTemplate.replace(/{{verifyUrl}}/g, verifyUrl);
-
-                    await sendEmail({
-                        email: existingUser.email,
-                        subject: 'Complete Your Botie Registration',
-                        message,
-                        html: htmlTemplate,
-                    });
-                    
-                    return res.status(500).json({ success: false, message: 'An email has been sent for registration. Please check your inbox to verify.' });
-                
-                } catch (err) {
-                    console.error(err);
-                    return res.status(500).json({ success: false, message: 'Email could not be sent' });
-                }
-            }
-        } else {
-            // Case 4: No existing user - create new user
-            const user = new User({
-                firstname,
-                lastname,
-                email,
-                phoneNumber,
-                address,
-                password,
-                profession,
-                professionDescription,
-            });
-
-            const verificationToken = user.getEmailVerificationToken();
-            await user.save();
-
-            const verifyUrl = `${getProtocol(req)}://${req.get('host')}/api/auth/verifyemail?token=${verificationToken}`;
-            const message = `Thank you for registering! Please verify your email by copying and pasting this link into your browser: \n\n ${verifyUrl} \n\n This link will expire in 10 minutes.`;
-
-            try {
-                const templatePath = path.join(__dirname, '..', 'templates', 'emailVerificationTemplate.html');
-                let htmlTemplate = fs.readFileSync(templatePath, 'utf-8');
-                htmlTemplate = htmlTemplate.replace(/{{verifyUrl}}/g, verifyUrl);
-
-                await sendEmail({
-                    email: user.email,
-                    subject: 'Botie Account Verification',
-                    message,
-                    html: htmlTemplate,
+                // User is active and verified - block registration
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'An account with this email address already exists and is verified. Please login instead or use a different email address.' 
                 });
-                res.status(201).json({ 
-                    success: true, 
-                    message: 'Registration successful. Please check your email to verify your account.'
-                });
-            } catch (err) {
-                console.error(err);
-                user.emailVerificationToken = undefined;
-                user.emailVerificationTokenExpires = undefined;
-                await user.save({ validateBeforeSave: false });
-                return res.status(500).json({ success: false, message: 'Email could not be sent' });
             }
         }
+        
+        // Create new user (either no existing user or soft-deleted user was just deleted)
+        const user = new User({
+            firstname,
+            lastname,
+            email,
+            phoneNumber,
+            address,
+            password,
+            profession,
+            professionDescription,
+        });
+
+        const verificationToken = user.getEmailVerificationToken();
+        await user.save();
+
+        const verifyUrl = `${getProtocol(req)}://${req.get('host')}/api/auth/verifyemail?token=${verificationToken}`;
+        const message = `Thank you for registering! Please verify your email by copying and pasting this link into your browser: \n\n ${verifyUrl} \n\n This link will expire in 10 minutes.`;
+
+        try {
+            const templatePath = path.join(__dirname, '..', 'templates', 'emailVerificationTemplate.html');
+            let htmlTemplate = fs.readFileSync(templatePath, 'utf-8');
+            htmlTemplate = htmlTemplate.replace(/{{verifyUrl}}/g, verifyUrl);
+
+            await sendEmail({
+                email: user.email,
+                subject: 'Botie Account Verification',
+                message,
+                html: htmlTemplate,
+            });
+            res.status(201).json({ 
+                success: true, 
+                message: 'Registration successful. Please check your email to verify your account.'
+            });
+        } catch (err) {
+            console.error('Registration error:', err);
+            user.emailVerificationToken = undefined;
+            user.emailVerificationTokenExpires = undefined;
+            await user.save({ validateBeforeSave: false });
+            return res.status(500).json({ success: false, message: 'Email could not be sent' });
+        }
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: 'Server error' });
+        console.error('Registration error:', err);
+        // Check if it's a MongoDB duplicate key error (email already exists)
+        if (err.code === 11000 && err.keyPattern && err.keyPattern.email) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'An account with this email address already exists. Please login instead or use a different email address.' 
+            });
+        }
+        // Check if it's a validation error
+        if (err.name === 'ValidationError') {
+            const errorMessages = Object.values(err.errors).map(error => error.message);
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Validation error: ' + errorMessages.join(', ') 
+            });
+        }
+        res.status(500).json({ 
+            success: false, 
+            message: 'Registration failed. Please try again later or contact support if the problem persists.' 
+        });
     }
 };
 

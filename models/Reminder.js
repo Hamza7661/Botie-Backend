@@ -16,13 +16,13 @@ const reminderSchema = new mongoose.Schema({
     coordinates: {
         latitude: {
             type: Number,
-            required: [true, 'Please provide latitude coordinate'],
+            required: false,
             min: [-90, 'Latitude must be between -90 and 90'],
             max: [90, 'Latitude must be between -90 and 90']
         },
         longitude: {
             type: Number,
-            required: [true, 'Please provide longitude coordinate'],
+            required: false,
             min: [-180, 'Longitude must be between -180 and 180'],
             max: [180, 'Longitude must be between -180 and 180']
         }
@@ -38,6 +38,25 @@ const reminderSchema = new mongoose.Schema({
         default: null,
         index: true
     },
+    // Notification tracking fields
+    timeNotificationSent: {
+        type: Boolean,
+        default: false,
+        index: true
+    },
+    timeNotificationSentAt: {
+        type: Date,
+        default: null
+    },
+    locationNotificationSent: {
+        type: Boolean,
+        default: false,
+        index: true
+    },
+    locationNotificationSentAt: {
+        type: Date,
+        default: null
+    },
     // Soft delete fields
     isDeleted: {
         type: Boolean,
@@ -49,6 +68,25 @@ const reminderSchema = new mongoose.Schema({
         default: null,
         index: true,
     },
+    // Call status tracking
+    callAttempts: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 2
+    },
+    lastCallAttempt: {
+        type: Date
+    },
+    callStatus: {
+        type: String,
+        enum: ['not_called', 'calling', 'completed', 'failed', 'no_answer', 'busy', 'cancelled'],
+        default: 'not_called'
+    },
+    callSid: {
+        type: String
+    },
+
 }, { timestamps: true });
 
 // Compound indexes for soft delete queries
@@ -68,7 +106,7 @@ reminderSchema.pre(/^find/, function(next) {
 reminderSchema.pre(/^find/, function(next) {
     this.populate({
         path: 'user',
-        select: 'firstname lastname email'
+        select: 'firstname lastname email phoneNumber twilioPhoneNumber'
     });
     next();
 });

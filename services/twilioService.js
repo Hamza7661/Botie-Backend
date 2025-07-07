@@ -151,10 +151,88 @@ const listAllPhoneNumbers = async () => {
     }
 };
 
+/**
+ * Make a phone call using Twilio
+ * @param {Object} options - Call options
+ * @param {string} options.to - Phone number to call
+ * @param {string} options.from - Twilio phone number to call from
+ * @param {string} options.message - Message to speak during the call
+ * @param {string} options.statusCallback - Webhook URL for call status updates
+ * @returns {Promise<Object>} Call details
+ */
+const makePhoneCall = async ({ to, from, message, statusCallback = null }) => {
+    try {
+        // Create TwiML for the call
+        const twiml = new twilio.twiml.VoiceResponse();
+        twiml.say(message, {
+            voice: 'alice',
+            language: 'en-US'
+        });
+
+        // Call options
+        const callOptions = {
+            twiml: twiml.toString(),
+            to: to,
+            from: from,
+            timeout: 30, // Ring for 30 seconds
+            record: false
+        };
+
+        // Add status callback if provided
+        if (statusCallback) {
+            callOptions.statusCallback = statusCallback;
+            callOptions.statusCallbackEvent = ['initiated', 'ringing', 'answered', 'completed'];
+            callOptions.statusCallbackMethod = 'POST';
+        }
+
+        // Make the call
+        const call = await client.calls.create(callOptions);
+
+        return {
+            sid: call.sid,
+            status: call.status,
+            to: call.to,
+            from: call.from,
+            direction: call.direction,
+            duration: call.duration,
+            price: call.price
+        };
+    } catch (error) {
+        console.error('Error making phone call:', error);
+        throw new Error('Failed to make phone call');
+    }
+};
+
+
+
+/**
+ * Get call status from Twilio
+ * @param {string} callSid - The SID of the call
+ * @returns {Promise<Object>} Call status details
+ */
+const getCallStatus = async (callSid) => {
+    try {
+        const call = await client.calls(callSid).fetch();
+        return {
+            sid: call.sid,
+            status: call.status,
+            duration: call.duration,
+            price: call.price,
+            answeredBy: call.answeredBy,
+            callDuration: call.callDuration
+        };
+    } catch (error) {
+        console.error('Error getting call status:', error);
+        throw new Error('Failed to get call status');
+    }
+};
+
 module.exports = {
     getAvailablePhoneNumbers,
     purchasePhoneNumber,
     releasePhoneNumber,
     assignPhoneNumberToUser,
-    listAllPhoneNumbers
+    listAllPhoneNumbers,
+    makePhoneCall,
+    getCallStatus
 }; 
