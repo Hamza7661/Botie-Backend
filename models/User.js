@@ -48,6 +48,21 @@ const userSchema = new mongoose.Schema({
         enum: ['active', 'inactive', 'pending'],
         default: null,
     },
+    // Current location for location-based reminders
+    currentLocation: {
+        latitude: {
+            type: Number,
+            default: null,
+        },
+        longitude: {
+            type: Number,
+            default: null,
+        },
+        updatedAt: {
+            type: Date,
+            default: null,
+        }
+    },
     password: {
         type: String,
         required: [true, 'Please provide a password'],

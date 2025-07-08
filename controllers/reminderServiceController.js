@@ -1,5 +1,6 @@
 const reminderService = require('../services/reminderService');
 const { locationUpdateSchema } = require('../validators/reminderValidator');
+const User = require('../models/User');
 
 // @desc    Update user location for location-based reminders
 // @route   POST /api/reminders/location-update
@@ -17,6 +18,15 @@ const updateLocation = async (req, res) => {
 
         const { latitude, longitude } = value;
         const userId = req.user.id;
+
+        // Update user's current location in database
+        await User.findByIdAndUpdate(userId, {
+            currentLocation: {
+                latitude,
+                longitude,
+                updatedAt: new Date()
+            }
+        });
 
         // Handle location update in reminder service
         await reminderService.handleLocationUpdate(userId, { latitude, longitude });

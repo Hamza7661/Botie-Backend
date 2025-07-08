@@ -28,8 +28,8 @@ class ReminderService {
             scheduled: false
         });
 
-        // Check for location-based reminders every 5 minutes using cron
-        this.locationCronJob = cron.schedule('*/5 * * * *', async () => {
+        // Check for location-based reminders every 10 seconds using cron for good precision
+        this.locationCronJob = cron.schedule('*/10 * * * * *', async () => {
             try {
                 await this.checkLocationBasedReminders();
             } catch (error) {
@@ -46,7 +46,7 @@ class ReminderService {
 
         console.log('✅ Reminder Service started successfully with cron jobs');
         console.log('⏰ Time-based reminders: Every 10 seconds');
-        console.log('📍 Location-based reminders: Every 5 minutes');
+        console.log('📍 Location-based reminders: Every 10 seconds');
     }
 
     // Stop the reminder service
@@ -111,10 +111,21 @@ class ReminderService {
                 isDeleted: { $ne: true },
                 'coordinates.latitude': { $exists: true, $ne: null },
                 'coordinates.longitude': { $exists: true, $ne: null }
-            }).populate('user', 'email phoneNumber firstname lastname twilioPhoneNumber currentLocation');
+            }).populate('user', 'email phoneNumber firstname lastname twilioPhoneNumber');
 
             let processedCount = 0;
             for (const reminder of reminders) {
+                // Skip location-based triggers for reminders that have a time set
+                // Time-based reminders take priority over location-based triggers
+                if (reminder.reminderDateTime) {
+                    continue;
+                }
+                
+                // Fetch user with currentLocation separately
+                const User = require('../models/User');
+                const user = await User.findById(reminder.user._id);
+                reminder.user = user; // Replace the populated user with full user data
+                
                 if (await this.isUserNearReminder(reminder)) {
                     await this.processReminder(reminder, 'location');
                     processedCount++;
@@ -265,14 +276,10 @@ class ReminderService {
 
             switch (callStatus.status) {
                 case 'completed':
-                    if (callStatus.duration > 0) {
-                        newStatus = 'completed';
-                        console.log(`✅ Call completed successfully for reminder ${reminderId}`);
-                    } else {
-                        newStatus = 'no_answer';
-                        shouldRetry = reminder.callAttempts < 2;
-                        console.log(`📞 Call not answered for reminder ${reminderId}`);
-                    }
+                    // If call status is 'completed', it means the call was answered
+                    // Duration might be 0 if user picked up and immediately hung up
+                    newStatus = 'completed';
+                    console.log(`✅ Call completed successfully for reminder ${reminderId}`);
                     break;
                 case 'failed':
                 case 'busy':
@@ -372,10 +379,15 @@ class ReminderService {
         htmlTemplate = htmlTemplate.replace(/{{reminderType}}/g, triggerText);
         htmlTemplate = htmlTemplate.replace(/{{triggerTime}}/g, triggerTime);
         
+        // Handle conditional location block
         if (reminderData.locationName) {
+            // Replace locationName placeholder and keep the conditional block content
             htmlTemplate = htmlTemplate.replace(/{{locationName}}/g, reminderData.locationName);
+            // Remove the conditional tags but keep the content
+            htmlTemplate = htmlTemplate.replace(/{{#if locationName}}/g, '');
+            htmlTemplate = htmlTemplate.replace(/{{\/if}}/g, '');
         } else {
-            // Remove the location section if no location name
+            // Remove the entire conditional block if no location name
             htmlTemplate = htmlTemplate.replace(/{{#if locationName}}[\s\S]*?{{\/if}}/g, '');
         }
 
