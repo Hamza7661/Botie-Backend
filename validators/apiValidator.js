@@ -84,8 +84,14 @@ const combinedTaskReminderSchema = Joi.object({
         }
     }
     
-    // If this is a task (has task data)
-    if (hasTaskData) {
+    // If reminder is provided, prioritize reminder creation and ignore task data
+    // This allows for descriptive task fields in reminder requests
+    if (hasReminder) {
+        return value; // Allow reminder creation even if task fields are present
+    }
+    
+    // If this is a task (has task data and no reminder)
+    if (hasTaskData && !hasReminder) {
         // For tasks, we need customer data
         if (!hasCustomerData) {
             return helpers.error('any.invalid', { 
@@ -105,12 +111,6 @@ const combinedTaskReminderSchema = Joi.object({
                 message: 'For tasks, description is required' 
             });
         }
-    }
-    
-    // If reminder is provided, prioritize reminder creation and ignore task data
-    // This allows for descriptive task fields in reminder requests
-    if (hasReminder) {
-        return value; // Allow reminder creation even if task fields are present
     }
     
     // Must provide at least one type of data
