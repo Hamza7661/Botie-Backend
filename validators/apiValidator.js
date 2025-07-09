@@ -98,9 +98,9 @@ const combinedTaskReminderSchema = Joi.object({
         if (value.reminderLocation && typeof value.reminderLocation === 'string' && value.reminderLocation.trim() !== '') {
             const coordPattern = /^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/;
             if (!coordPattern.test(value.reminderLocation.trim())) {
-                return helpers.error('any.invalid', { 
-                    message: 'Location must be in format "latitude,longitude" (e.g., "40.7128,-74.0060")' 
-                });
+                // If it's not coordinates, treat it as a location name and set to null
+                // This allows the reminder to be created as time-only
+                value.reminderLocation = null;
             }
         }
     }
