@@ -107,11 +107,10 @@ const combinedTaskReminderSchema = Joi.object({
         }
     }
     
-    // Must be either a reminder or a task, not both
-    if (hasReminder && hasTaskData) {
-        return helpers.error('any.invalid', { 
-            message: 'Cannot create both reminder and task in the same request. Please provide either reminder data or task data, not both.' 
-        });
+    // If reminder is provided, prioritize reminder creation and ignore task data
+    // This allows for descriptive task fields in reminder requests
+    if (hasReminder) {
+        return value; // Allow reminder creation even if task fields are present
     }
     
     // Must provide at least one type of data

@@ -261,7 +261,7 @@ const createTaskForUser = async (req, res) => {
         let resultType;
 
         if (hasReminder && (hasReminderLocation || hasReminderTime)) {
-            // Create a reminder
+            // Create a reminder (prioritize reminder over task data)
             const reminderData = {
                 description: reminder,
                 user: user._id
@@ -287,7 +287,7 @@ const createTaskForUser = async (req, res) => {
 
             result = reminderObj;
             resultType = 'reminder';
-        } else if (hasTaskData && hasCustomerData) {
+        } else if (hasTaskData && hasCustomerData && !hasReminder) {
             // Create a task
             const task = new Task({
                 heading: heading || '',
