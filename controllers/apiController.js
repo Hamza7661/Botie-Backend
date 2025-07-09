@@ -245,7 +245,25 @@ const createTaskForUser = async (req, res) => {
 
         // Determine if this should be a reminder or task based on provided data
         const hasReminder = reminder && reminder.trim() !== '';
-        const hasReminderLocation = reminderLocation && reminderLocation.latitude && reminderLocation.longitude;
+        
+        // Handle reminderLocation - convert string format to object if needed
+        let processedReminderLocation = null;
+        if (reminderLocation) {
+            if (typeof reminderLocation === 'string') {
+                // Parse comma-separated string "lat,long"
+                const coords = reminderLocation.split(',').map(coord => parseFloat(coord.trim()));
+                if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+                    processedReminderLocation = {
+                        latitude: coords[0],
+                        longitude: coords[1]
+                    };
+                }
+            } else if (reminderLocation.latitude && reminderLocation.longitude) {
+                processedReminderLocation = reminderLocation;
+            }
+        }
+        
+        const hasReminderLocation = processedReminderLocation && processedReminderLocation.latitude && processedReminderLocation.longitude;
         const hasReminderTime = reminderTime && (reminderTime instanceof Date || typeof reminderTime === 'string');
         
         const hasTaskData = (heading && heading.trim() !== '') || 
@@ -269,7 +287,7 @@ const createTaskForUser = async (req, res) => {
 
             // Add coordinates if provided
             if (hasReminderLocation) {
-                reminderData.coordinates = reminderLocation;
+                reminderData.coordinates = processedReminderLocation;
                 reminderData.locationName = null; // Will be set to null as per existing logic
             }
 

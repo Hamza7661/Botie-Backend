@@ -14,21 +14,26 @@ const combinedTaskReminderSchema = Joi.object({
     reminder: Joi.string().trim().allow(null, '').optional().messages({
         'string.base': 'Reminder must be a string'
     }),
-    reminderLocation: Joi.object({
-        latitude: Joi.number().min(-90).max(90).required().messages({
-            'number.base': 'Latitude must be a number',
-            'number.min': 'Latitude must be between -90 and 90',
-            'number.max': 'Latitude must be between -90 and 90',
-            'any.required': 'Latitude is required'
+    reminderLocation: Joi.alternatives().try(
+        Joi.object({
+            latitude: Joi.number().min(-90).max(90).required().messages({
+                'number.base': 'Latitude must be a number',
+                'number.min': 'Latitude must be between -90 and 90',
+                'number.max': 'Latitude must be between -90 and 90',
+                'any.required': 'Latitude is required'
+            }),
+            longitude: Joi.number().min(-180).max(180).required().messages({
+                'number.base': 'Longitude must be a number',
+                'number.min': 'Longitude must be between -180 and 180',
+                'number.max': 'Longitude must be between -180 and 180',
+                'any.required': 'Longitude is required'
+            })
         }),
-        longitude: Joi.number().min(-180).max(180).required().messages({
-            'number.base': 'Longitude must be a number',
-            'number.min': 'Longitude must be between -180 and 180',
-            'number.max': 'Longitude must be between -180 and 180',
-            'any.required': 'Longitude is required'
+        Joi.string().pattern(/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/).messages({
+            'string.pattern.base': 'Location must be in format "latitude,longitude" (e.g., "40.7128,-74.0060")'
         })
-    }).allow(null).optional().messages({
-        'object.base': 'Reminder location must be an object with latitude and longitude'
+    ).allow(null).optional().messages({
+        'alternatives.match': 'Reminder location must be an object with latitude and longitude or a string in format "lat,long"'
     }),
     reminderTime: Joi.alternatives().try(Joi.date(), Joi.valid(null)).optional().messages({
         'alternatives.match': 'Reminder time must be a valid date or null'
@@ -55,7 +60,13 @@ const combinedTaskReminderSchema = Joi.object({
 }).custom((value, helpers) => {
     // Determine if this is a reminder or task based on provided data
     const hasReminder = value.reminder && value.reminder.trim() !== '';
-    const hasReminderLocation = value.reminderLocation && value.reminderLocation.latitude && value.reminderLocation.longitude;
+    
+    // Check if reminderLocation is provided (could be object, string, or null)
+    const hasReminderLocation = value.reminderLocation && (
+        (typeof value.reminderLocation === 'object' && value.reminderLocation.latitude && value.reminderLocation.longitude) ||
+        (typeof value.reminderLocation === 'string' && value.reminderLocation.trim() !== '')
+    );
+    
     const hasReminderTime = value.reminderTime && (value.reminderTime instanceof Date || typeof value.reminderTime === 'string');
     
     const hasTaskData = (value.heading && value.heading.trim() !== '') || 
@@ -76,8 +87,8 @@ const combinedTaskReminderSchema = Joi.object({
             });
         }
         
-        // If reminderLocation is provided, it must be valid
-        if (value.reminderLocation && (!value.reminderLocation.latitude || !value.reminderLocation.longitude)) {
+        // If reminderLocation is provided as object, it must be valid
+        if (value.reminderLocation && typeof value.reminderLocation === 'object' && (!value.reminderLocation.latitude || !value.reminderLocation.longitude)) {
             return helpers.error('any.invalid', { 
                 message: 'Reminder location must have both latitude and longitude' 
             });
