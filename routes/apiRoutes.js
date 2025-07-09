@@ -16,7 +16,7 @@ router.get('/getuserbyassignedSID', apiKeyAuth, getUserByAssignedSID);
 // Get user by Twilio assigned phone number (third-party apps)
 router.get('/getuserbyassignednumber', apiKeyAuth, getUserByAssignedNumber);
 
-// Create task for user by Twilio assigned phone number (third-party apps)
+// Create task or reminder for user by Twilio assigned phone number (third-party apps)
 router.post('/create-task-for-user', apiKeyAuth, createTaskForUser);
 
 module.exports = router; 

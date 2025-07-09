@@ -673,6 +673,195 @@ The system provides detailed status information:
 - **Active reminders**: Count of reminders being processed
 - **Error logging**: Detailed error tracking
 
+## 🔌 Third-Party API Integration
+
+### **Combined Task/Reminder Creation API**
+
+The Botie system provides a flexible third-party API that can create either tasks (appointments) or reminders based on the data provided.
+
+#### **Endpoint:**
+```http
+POST /api/create-task-for-user
+```
+
+#### **Authentication:**
+```http
+Headers:
+x-api-key: <generated-api-key>
+x-timestamp: <current-timestamp>
+x-signature: <hmac-sha256-signature>
+assigned-number: <user-twilio-phone-number>
+```
+
+#### **Request Body Structure:**
+
+**For Reminders:**
+```json
+{
+  "reminder": "Pick up groceries from the store",
+  "reminderLocation": {
+    "latitude": 40.7128,
+    "longitude": -74.0060
+  },
+  "reminderTime": "2024-01-15T14:30:00.000Z",
+  "heading": null,
+  "summary": null,
+  "description": null,
+  "conversation": null,
+  "customer": null,
+  "isResolved": false
+}
+```
+
+**For Tasks (Appointments):**
+```json
+{
+  "heading": "Complete Project Setup",
+  "summary": "Set up the development environment",
+  "description": "Install Node.js, MongoDB, and configure the development environment",
+  "customer": {
+    "name": "Client Name",
+    "address": "123 Client St, City, State 12345",
+    "phoneNumber": "+1234567890"
+  },
+  "conversation": "Complete conversation history as string",
+  "isResolved": false,
+  "reminder": null,
+  "reminderLocation": null,
+  "reminderTime": null
+}
+```
+
+#### **Validation Rules:**
+
+**For Reminders:**
+- `reminder` (required): The reminder text
+- `reminderLocation` OR `reminderTime` (required): Either location coordinates or time
+- All other fields can be null
+
+**For Tasks:**
+- `heading` (required): Task title
+- `description` (required): Task description  
+- `customer` (required): Customer information with name, address, phoneNumber
+- All reminder fields can be null
+
+**General Rules:**
+- Cannot provide both reminder and task data in the same request
+- Must provide at least one type of data (reminder OR task)
+- All fields are nullable except for the required ones based on type
+
+#### **Response Format:**
+
+**Reminder Created:**
+```json
+{
+  "success": true,
+  "message": "Reminder created successfully",
+  "data": {
+    "reminder": {
+      "_id": "reminder_id",
+      "description": "Pick up groceries",
+      "coordinates": { "latitude": 40.7128, "longitude": -74.0060 },
+      "reminderDateTime": "2024-01-15T14:30:00.000Z",
+      "user": "user_id",
+      "createdAt": "2024-01-15T10:00:00.000Z"
+    },
+    "user": {
+      "_id": "user_id",
+      "firstname": "John",
+      "lastname": "Doe",
+      "profession": "Developer"
+    },
+    "type": "reminder"
+  }
+}
+```
+
+**Task Created:**
+```json
+{
+  "success": true,
+  "message": "Task created successfully",
+  "data": {
+    "task": {
+      "_id": "task_id",
+      "heading": "Complete Project Setup",
+      "summary": "Set up the development environment",
+      "description": "Install Node.js, MongoDB...",
+      "customer": {
+        "_id": "customer_id",
+        "name": "Client Name",
+        "address": "123 Client St",
+        "phoneNumber": "+1234567890"
+      },
+      "user": "user_id",
+      "createdAt": "2024-01-15T10:00:00.000Z"
+    },
+    "user": {
+      "_id": "user_id",
+      "firstname": "John",
+      "lastname": "Doe",
+      "profession": "Developer"
+    },
+    "type": "task"
+  }
+}
+```
+
+#### **Error Responses:**
+
+**Validation Error:**
+```json
+{
+  "success": false,
+  "message": "For reminders, either reminderLocation or reminderTime must be provided"
+}
+```
+
+**User Not Found:**
+```json
+{
+  "success": false,
+  "message": "User not found for the provided assigned number"
+}
+```
+
+#### **Use Cases:**
+
+1. **AI Agent Creates Reminder:**
+   ```json
+   {
+     "reminder": "Call client about project update",
+     "reminderTime": "2024-01-15T15:00:00.000Z"
+   }
+   ```
+
+2. **AI Agent Creates Location-Based Reminder:**
+   ```json
+   {
+     "reminder": "Pick up documents from office",
+     "reminderLocation": {
+       "latitude": 40.7128,
+       "longitude": -74.0060
+     }
+   }
+   ```
+
+3. **AI Agent Creates Appointment:**
+   ```json
+   {
+     "heading": "Client Meeting",
+     "summary": "Discuss project requirements",
+     "description": "Meet with client to discuss new project requirements and timeline",
+     "customer": {
+       "name": "John Smith",
+       "address": "456 Business Ave, City, State",
+       "phoneNumber": "+1234567890"
+     },
+     "conversation": "Client called requesting meeting..."
+   }
+   ```
+
 ## 🚀 Deployment
 
 ### Production Setup

@@ -2,8 +2,10 @@ const { generateApiKey } = require('../middleware/apiKeyMiddleware');
 const User = require('../models/User');
 const Task = require('../models/Task');
 const Customer = require('../models/Customer');
+const Reminder = require('../models/Reminder');
 const { taskSchema } = require('../validators/taskValidator');
-const { emitTaskCreated } = require('../services/websocketService');
+const { combinedTaskReminderSchema } = require('../validators/apiValidator');
+const { emitTaskCreated, emitReminderCreated } = require('../services/websocketService');
 const { sendThirdPartyTaskNotification } = require('../services/emailService');
 
 // @desc    Generate API key for third-party apps
@@ -178,7 +180,7 @@ const getUserByAssignedNumber = async (req, res) => {
     }
 };
 
-// @desc    Create task for user by Twilio assigned phone number
+// @desc    Create task or reminder for user by Twilio assigned phone number
 // @route   POST /api/create-task-for-user
 // @access  API Key protected
 const createTaskForUser = async (req, res) => {
@@ -205,8 +207,8 @@ const createTaskForUser = async (req, res) => {
             });
         }
 
-        // Validate request body
-        const { error, value } = taskSchema.validate(req.body);
+        // Validate request body using the combined schema
+        const { error, value } = combinedTaskReminderSchema.validate(req.body);
         if (error) {
             return res.status(400).json({ 
                 success: false, 
@@ -214,7 +216,17 @@ const createTaskForUser = async (req, res) => {
             });
         }
 
-        const { heading, summary, description, isResolved, customer: customerData, conversation } = value;
+        const { 
+            heading, 
+            summary, 
+            description, 
+            reminder, 
+            reminderLocation, 
+            reminderTime, 
+            conversation, 
+            customer: customerData, 
+            isResolved 
+        } = value;
 
         // Check if customer exists (by phone number)
         let customer = await Customer.findOne({ 
@@ -231,39 +243,94 @@ const createTaskForUser = async (req, res) => {
             await customer.save();
         }
 
-        // Create task
-        const task = new Task({
-            heading,
-            summary,
-            description,
-            conversation: conversation || null,
-            isResolved: isResolved || false,
-            customer: customer._id,
-            user: user._id
-        });
+        // Determine if this should be a reminder or task based on provided data
+        const hasReminder = reminder && reminder.trim() !== '';
+        const hasReminderLocation = reminderLocation && reminderLocation.latitude && reminderLocation.longitude;
+        const hasReminderTime = reminderTime && reminderTime instanceof Date;
+        
+        const hasTaskData = (heading && heading.trim() !== '') || 
+                           (summary && summary.trim() !== '') || 
+                           (description && description.trim() !== '');
+        
+        const hasCustomerData = customerData && 
+                               customerData.name && customerData.name.trim() !== '' &&
+                               customerData.address && customerData.address.trim() !== '' &&
+                               customerData.phoneNumber && customerData.phoneNumber.trim() !== '';
 
-        await task.save();
+        let result;
+        let resultType;
 
-        // Populate customer details for response
-        await task.populate('customer', 'name address phoneNumber');
+        if (hasReminder && (hasReminderLocation || hasReminderTime)) {
+            // Create a reminder
+            const reminderData = {
+                description: reminder,
+                user: user._id
+            };
 
-        // Emit real-time update
-        emitTaskCreated(user._id, task);
+            // Add coordinates if provided
+            if (hasReminderLocation) {
+                reminderData.coordinates = reminderLocation;
+                reminderData.locationName = null; // Will be set to null as per existing logic
+            }
 
-        // Send email notification
-        await sendThirdPartyTaskNotification(user, task, customer);
+            // Add reminder time if provided
+            if (hasReminderTime) {
+                reminderData.reminderDateTime = reminderTime;
+            }
+
+            const reminderObj = new Reminder(reminderData);
+            await reminderObj.save();
+
+            // Emit real-time update
+            emitReminderCreated(user._id, reminderObj);
+
+            result = reminderObj;
+            resultType = 'reminder';
+        } else if (hasTaskData && hasCustomerData) {
+            // Create a task
+            const task = new Task({
+                heading: heading || '',
+                summary: summary || '',
+                description: description || '',
+                conversation: conversation || null,
+                isResolved: isResolved || false,
+                customer: customer._id,
+                user: user._id
+            });
+
+            await task.save();
+
+            // Populate customer details for response
+            await task.populate('customer', 'name address phoneNumber');
+
+            // Emit real-time update
+            emitTaskCreated(user._id, task);
+
+            // Send email notification for tasks
+            await sendThirdPartyTaskNotification(user, task, customer);
+
+            result = task;
+            resultType = 'task';
+        } else {
+            // This should not happen due to validation, but handle gracefully
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid request: Must provide either reminder data or task data with customer information'
+            });
+        }
 
         res.status(201).json({
             success: true,
-            message: 'Task created successfully',
+            message: `${resultType === 'reminder' ? 'Reminder' : 'Task'} created successfully`,
             data: {
-                task: task,
+                [resultType]: result,
                 user: {
                     _id: user._id,
                     firstname: user.firstname,
                     lastname: user.lastname,
                     profession: user.profession
-                }
+                },
+                type: resultType
             }
         });
     } catch (error) {
@@ -281,7 +348,7 @@ const createTaskForUser = async (req, res) => {
 
         res.status(500).json({ 
             success: false, 
-            message: 'Server error while creating task' 
+            message: 'Server error while creating task/reminder' 
         });
     }
 };
