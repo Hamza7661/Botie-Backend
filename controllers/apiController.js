@@ -246,7 +246,7 @@ const createTaskForUser = async (req, res) => {
         // Determine if this should be a reminder or task based on provided data
         const hasReminder = reminder && reminder.trim() !== '';
         const hasReminderLocation = reminderLocation && reminderLocation.latitude && reminderLocation.longitude;
-        const hasReminderTime = reminderTime && reminderTime instanceof Date;
+        const hasReminderTime = reminderTime && (reminderTime instanceof Date || typeof reminderTime === 'string');
         
         const hasTaskData = (heading && heading.trim() !== '') || 
                            (summary && summary.trim() !== '') || 
@@ -275,7 +275,8 @@ const createTaskForUser = async (req, res) => {
 
             // Add reminder time if provided
             if (hasReminderTime) {
-                reminderData.reminderDateTime = reminderTime;
+                // Convert string to Date if needed
+                reminderData.reminderDateTime = reminderTime instanceof Date ? reminderTime : new Date(reminderTime);
             }
 
             const reminderObj = new Reminder(reminderData);

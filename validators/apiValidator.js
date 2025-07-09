@@ -56,7 +56,7 @@ const combinedTaskReminderSchema = Joi.object({
     // Determine if this is a reminder or task based on provided data
     const hasReminder = value.reminder && value.reminder.trim() !== '';
     const hasReminderLocation = value.reminderLocation && value.reminderLocation.latitude && value.reminderLocation.longitude;
-    const hasReminderTime = value.reminderTime && value.reminderTime instanceof Date;
+    const hasReminderTime = value.reminderTime && (value.reminderTime instanceof Date || typeof value.reminderTime === 'string');
     
     const hasTaskData = (value.heading && value.heading.trim() !== '') || 
                        (value.summary && value.summary.trim() !== '') || 
