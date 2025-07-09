@@ -64,7 +64,7 @@ const combinedTaskReminderSchema = Joi.object({
     // Check if reminderLocation is provided (could be object, string, or null)
     const hasReminderLocation = value.reminderLocation && (
         (typeof value.reminderLocation === 'object' && value.reminderLocation.latitude && value.reminderLocation.longitude) ||
-        (typeof value.reminderLocation === 'string' && value.reminderLocation.trim() !== '')
+        (typeof value.reminderLocation === 'string' && value.reminderLocation.trim() !== '' && value.reminderLocation.includes(','))
     );
     
     const hasReminderTime = value.reminderTime && (value.reminderTime instanceof Date || typeof value.reminderTime === 'string');
@@ -92,6 +92,16 @@ const combinedTaskReminderSchema = Joi.object({
             return helpers.error('any.invalid', { 
                 message: 'Reminder location must have both latitude and longitude' 
             });
+        }
+        
+        // If reminderLocation is provided as string, it must be in coordinate format
+        if (value.reminderLocation && typeof value.reminderLocation === 'string' && value.reminderLocation.trim() !== '') {
+            const coordPattern = /^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/;
+            if (!coordPattern.test(value.reminderLocation.trim())) {
+                return helpers.error('any.invalid', { 
+                    message: 'Location must be in format "latitude,longitude" (e.g., "40.7128,-74.0060")' 
+                });
+            }
         }
     }
     
